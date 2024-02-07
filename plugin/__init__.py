@@ -124,14 +124,16 @@ class ZVM(Architecture):
             return il.reg(size, op.text)
         elif op.type == 'imm':
             return il.const(size, op.value)
+        elif op.type == 'mem':
+            return il.load(size, il.reg(4, 'dp'))
         return il.unimplemented()
 
     def write_il_operand(self, op, value, il):
         size = op.data_size.value
         if op.type == 'reg':
             return il.set_reg(size, op.text, value)
-        # elif op.type == 'imm':
-        #     return il.const(size, op.value)
+        elif op.type == 'mem':
+            return il.store(size, il.reg(4, 'dp'), value)
         return il.unimplemented()
     
     def get_instruction_low_level_il(self, data, addr, il):
