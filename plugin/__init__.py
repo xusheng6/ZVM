@@ -117,6 +117,22 @@ class ZVM(Architecture):
                 tokens.append(InstructionTextToken(InstructionTextTokenType.TextToken, f"{op.text}"))
 
         return tokens, instr.size
+
+    def read_il_operand(self, op, il):
+        size = op.data_size.value
+        if op.type == 'reg':
+            return il.reg(size, op.text)
+        elif op.type == 'imm':
+            return il.const(size, op.value)
+        return il.unimplemented()
+
+    def write_il_operand(self, op, value, il):
+        size = op.data_size.value
+        if op.type == 'reg':
+            return il.set_reg(size, op.text, value)
+        # elif op.type == 'imm':
+        #     return il.const(size, op.value)
+        return il.unimplemented()
     
     def get_instruction_low_level_il(self, data, addr, il):
         # Check if there is an xor key for our instruction
@@ -144,14 +160,29 @@ class ZVM(Architecture):
         size2 = op2.data_size.value
 
         if mnemonic == 'add':
-            if op1.type == 'reg' and op2.type == 'imm':
-                il.append(
-                    il.set_reg(
-                        size1,
-                        op1.text,
-                        il.add(size1, il.reg(size1, op1.text), il.const(size2, op2.value))))
-            else:
-                il.append(il.nop())
+            il.append(
+                self.write_il_operand(op1,
+                                      il.add(size1,
+                                             self.read_il_operand(op1, il),
+                                             self.read_il_operand(op2, il)),
+                                      il))
+        elif mnemonic == 'sub':
+            il.append(
+                self.write_il_operand(op1,
+                                      il.sub(size1,
+                                             self.read_il_operand(op1, il),
+                                             self.read_il_operand(op2, il)),
+                                      il))
+        elif mnemonic == 'xor':
+            il.append(
+                self.write_il_operand(op1,
+                                      il.xor_expr(size1,
+                                             self.read_il_operand(op1, il),
+                                             self.read_il_operand(op2, il)),
+                                      il))
+        elif mnemonic == 'mov':
+            il.append(
+                self.write_il_operand(op1, self.read_il_operand(op2, il), il))
         else:
             il.append(il.nop())
 
