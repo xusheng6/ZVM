@@ -153,7 +153,28 @@ class ZVM(Architecture):
         return tokens, instr.size
     
     def get_instruction_low_level_il(self, data, addr, il):
-        return None
+        # Check if there is an xor key for our instruction
+        if addr not in ZVM.xor_keys:
+            log_warn(f"Address {addr} not in xor_keys")
+            return None, 0
+
+        # Decrypt the instruction
+        opcode = (data[0] ^ ZVM.xor_keys[addr]) & 0x7f
+        tmp_data = bytes([opcode]) + data[1:]
+        instr = instructions[opcode](tmp_data)
+
+        # Get the mnemonic
+        mnemonic = instr.text
+
+        # Parse the operands
+        instr.parse(tmp_data)
+
+        # Set the next xor key
+        ZVM.xor_keys[addr + instr.size] = instr.key
+
+        il.append(il.nop())
+
+        return instr.size
 
 ZVM.register()
 
