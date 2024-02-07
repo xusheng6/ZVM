@@ -154,10 +154,13 @@ class ZVM(Architecture):
         # Set the next xor key
         ZVM.xor_keys[addr + instr.size] = instr.key
 
-        op1 = instr.operands[0]
-        op2 = instr.operands[1]
-        size1 = op1.data_size.value
-        size2 = op2.data_size.value
+        if len(instr.operands) > 0:
+            op1 = instr.operands[0]
+            size1 = op1.data_size.value
+
+        if len(instr.operands) > 1:
+            op2 = instr.operands[1]
+            size2 = op2.data_size.value
 
         if mnemonic == 'add':
             il.append(
@@ -183,6 +186,13 @@ class ZVM(Architecture):
         elif mnemonic == 'mov':
             il.append(
                 self.write_il_operand(op1, self.read_il_operand(op2, il), il))
+        elif mnemonic == 'not':
+            il.append(
+                self.write_il_operand(op1, il.not_expr(size1, self.read_il_operand(op1, il)), il))
+        elif mnemonic == 'nop':
+            il.append(il.nop())
+        elif mnemonic == 'exit':
+            il.append(il.no_ret())
         else:
             il.append(il.nop())
 
