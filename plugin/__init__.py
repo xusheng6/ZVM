@@ -18,60 +18,26 @@ class ZVM(Architecture):
     regs = {'sp': RegisterInfo('sp', 4),
             # Setup registers from 0 to 15
             'reg0': RegisterInfo('reg0', 4),
-            'reg0.b': RegisterInfo('reg0', 4, 1),
-            'reg0.w': RegisterInfo('reg0', 4, 2),
             'reg1': RegisterInfo('reg1', 4),
-            'reg1.b': RegisterInfo('reg1', 4, 1),
-            'reg1.w': RegisterInfo('reg1', 4, 2),
             'reg2': RegisterInfo('reg2', 4),
-            'reg2.b': RegisterInfo('reg2', 4, 1),
-            'reg2.w': RegisterInfo('reg2', 4, 2),
             'reg3': RegisterInfo('reg3', 4),
-            'reg3.b': RegisterInfo('reg3', 4, 1),
-            'reg3.w': RegisterInfo('reg3', 4, 2),
             'reg4': RegisterInfo('reg4', 4),
-            'reg4.b': RegisterInfo('reg4', 4, 1),
-            'reg4.w': RegisterInfo('reg4', 4, 2),
             'reg5': RegisterInfo('reg5', 4),
-            'reg5.b': RegisterInfo('reg5', 4, 1),
-            'reg5.w': RegisterInfo('reg5', 4, 2),
             'reg6': RegisterInfo('reg6', 4),
-            'reg6.b': RegisterInfo('reg6', 4, 1),
-            'reg6.w': RegisterInfo('reg6', 4, 2),
             'reg7': RegisterInfo('reg7', 4),
-            'reg7.b': RegisterInfo('reg7', 4, 1),
-            'reg7.w': RegisterInfo('reg7', 4, 2), 
             'reg8': RegisterInfo('reg8', 4),
-            'reg8.b': RegisterInfo('reg8', 4, 1),
-            'reg8.w': RegisterInfo('reg8', 4, 2),
             'reg9': RegisterInfo('reg9', 4),
-            'reg9.b': RegisterInfo('reg9', 4, 1),
-            'reg9.w': RegisterInfo('reg9', 4, 2),
             'reg10': RegisterInfo('reg10', 4),
-            'reg10.b': RegisterInfo('reg10', 4, 1),
-            'reg10.w': RegisterInfo('reg10', 4, 2),
             'reg11': RegisterInfo('reg11', 4),
-            'reg11.b': RegisterInfo('reg11', 4, 1),
-            'reg11.w': RegisterInfo('reg11', 4, 2),
             'reg12': RegisterInfo('reg12', 4),
-            'reg12.b': RegisterInfo('reg12', 4, 1),
-            'reg12.w': RegisterInfo('reg12', 4, 2),
             'reg13': RegisterInfo('reg13', 4),
-            'reg13.b': RegisterInfo('reg13', 4, 1),
-            'reg13.w': RegisterInfo('reg13', 4, 2),
             'reg14': RegisterInfo('reg14', 4),
-            'reg14.b': RegisterInfo('reg14', 4, 1),
-            'reg14.w': RegisterInfo('reg14', 4, 2),
             'reg15': RegisterInfo('reg15', 4),
-            'reg15.b': RegisterInfo('reg15', 4, 1),
-            'reg15.w': RegisterInfo('reg15', 4, 2),
             # Setup special registers
             'pc': RegisterInfo('pc', 4),
             # Data pointer for data buffer
             'dp': RegisterInfo('dp', 4),
             'loop_counter': RegisterInfo('loop_counter', 4),
-            'loop_counter.b': RegisterInfo('loop_counter', 4, 1),
-            'loop_counter.w': RegisterInfo('loop_counter', 4, 2),
             }
     
     # Xor keys
@@ -172,7 +138,22 @@ class ZVM(Architecture):
         # Set the next xor key
         ZVM.xor_keys[addr + instr.size] = instr.key
 
-        il.append(il.nop())
+        op1 = instr.operands[0]
+        op2 = instr.operands[1]
+        size1 = op1.data_size.value
+        size2 = op2.data_size.value
+
+        if mnemonic == 'add':
+            if op1.type == 'reg' and op2.type == 'imm':
+                il.append(
+                    il.set_reg(
+                        size1,
+                        op1.text,
+                        il.add(size1, il.reg(size1, op1.text), il.const(size2, op2.value))))
+            else:
+                il.append(il.nop())
+        else:
+            il.append(il.nop())
 
         return instr.size
 
