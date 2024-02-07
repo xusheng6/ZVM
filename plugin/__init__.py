@@ -185,6 +185,20 @@ class ZVM(Architecture):
                                              self.read_il_operand(op1, il),
                                              self.read_il_operand(op2, il)),
                                       il))
+        elif mnemonic == 'rol':
+            il.append(
+                self.write_il_operand(op1,
+                                      il.rotate_left(size1,
+                                             self.read_il_operand(op1, il),
+                                             self.read_il_operand(op2, il)),
+                                      il))
+        elif mnemonic == 'ror':
+            il.append(
+                self.write_il_operand(op1,
+                                      il.rotate_right(size1,
+                                             self.read_il_operand(op1, il),
+                                             self.read_il_operand(op2, il)),
+                                      il))
         elif mnemonic == 'mov':
             il.append(
                 self.write_il_operand(op1, self.read_il_operand(op2, il), il))
