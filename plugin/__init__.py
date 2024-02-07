@@ -2,6 +2,7 @@ from binaryninja.log import log_info, log_warn
 from binaryninja.architecture import Architecture
 from binaryninja.function import RegisterInfo, InstructionInfo, InstructionTextToken
 from binaryninja.enums import InstructionTextTokenType, BranchType
+from binaryninja.lowlevelil import LowLevelILLabel
 
 from .zvm import instructions
 
@@ -209,6 +210,15 @@ class ZVM(Architecture):
             il.append(il.nop())
         elif mnemonic == 'exit':
             il.append(il.no_ret())
+        elif mnemonic == 'loop':
+            il.append(il.set_reg(4,
+                                 'loop_counter',
+                                 il.sub(4, il.reg(4, 'loop_counter'), il.const(4, 1))))
+            condition = il.compare_not_equal(4, il.reg(4, 'loop_counter'), il.const(4, 0))
+            t = il.get_label_for_address(Architecture['ZVM'], addr + instr.size - op2.value)
+            f = il.get_label_for_address(Architecture['ZVM'], addr + instr.size)
+            # here we just think t and f are both valid, and take the easy route
+            il.append(il.if_expr(condition, t, f))
         else:
             il.append(il.nop())
 
