@@ -103,6 +103,8 @@ class ZVM(Architecture):
         if instr.text[:4] == 'loop':
             result.add_branch(BranchType.TrueBranch, addr + instr.size - instr.operands[1].value)
             result.add_branch(BranchType.FalseBranch, addr + instr.size )
+        elif instr.text[:4] == 'exit':
+            result.add_branch(BranchType.FunctionReturn)
 
         return result
 
