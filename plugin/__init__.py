@@ -1,5 +1,5 @@
 from binaryninja.log import log_info, log_warn
-from binaryninja.architecture import Architecture
+from binaryninja.architecture import Architecture, IntrinsicInfo
 from binaryninja.function import RegisterInfo, InstructionInfo, InstructionTextToken
 from binaryninja.enums import InstructionTextTokenType, BranchType
 from binaryninja.lowlevelil import LowLevelILLabel
@@ -40,6 +40,8 @@ class ZVM(Architecture):
             'dp': RegisterInfo('dp', 4),
             'loop_counter': RegisterInfo('loop_counter', 4),
             }
+
+    intrinsics = {'rc4': IntrinsicInfo(inputs=[], outputs=[], index=1)}
     
     # Xor keys
     xor_keys = {0:0}
@@ -120,13 +122,14 @@ class ZVM(Architecture):
         return tokens, instr.size
 
     def read_il_operand(self, op, il):
-        size = op.data_size.value
         if op.type == 'reg':
-            return il.reg(size, op.text)
+            return il.reg(op.data_size.value, op.text)
         elif op.type == 'imm':
-            return il.const(size, op.value)
+            return il.const(op.data_size.value, op.value)
         elif op.type == 'mem':
-            return il.load(size, il.reg(4, 'dp'))
+            return il.load(op.data_size.value, il.reg(4, 'dp'))
+        elif op.type == 'buffer':
+            return il.unimplemented()
         return il.unimplemented()
 
     def write_il_operand(self, op, value, il):
@@ -159,11 +162,17 @@ class ZVM(Architecture):
 
         if len(instr.operands) > 0:
             op1 = instr.operands[0]
+            # this is used as the size of the instruction
             size1 = op1.data_size.value
 
         if len(instr.operands) > 1:
             op2 = instr.operands[1]
-            size2 = op2.data_size.value
+
+        if len(instr.operands) > 2:
+            op3 = instr.operands[2]
+
+        if len(instr.operands) > 3:
+            op4 = instr.operands[3]
 
         if mnemonic == 'add':
             il.append(
@@ -219,6 +228,17 @@ class ZVM(Architecture):
             f = il.get_label_for_address(Architecture['ZVM'], addr + instr.size)
             # here we just think t and f are both valid, and take the easy route
             il.append(il.if_expr(condition, t, f))
+        elif mnemonic == 'rc4':
+            # il.append(il.intrinsic([], 'rc4', [il.reg(4, 'dp')]))
+            # Do a hack here, we know the rc4 key buffer starts at addr+3
+            # I also created two constants for the key and data size, which is not needed at LLIL (because the operands)
+            # already have the size info. But they are needed in HLIL, since the size info is removed at HLIL
+            il.append(il.intrinsic([], 'rc4',
+                                   [il.load(op3.op_size, il.const(4, addr + 3)),
+                                    il.const(4, op3.op_size),
+                                    self.read_il_operand(op4, il),
+                                    il.const(4, op4.data_size.value)]))
+            pass
         else:
             il.append(il.nop())
 
