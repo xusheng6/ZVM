@@ -3,6 +3,7 @@ from binaryninja.architecture import Architecture, IntrinsicInfo
 from binaryninja.function import RegisterInfo, InstructionInfo, InstructionTextToken
 from binaryninja.enums import InstructionTextTokenType, BranchType
 from binaryninja.lowlevelil import LowLevelILLabel
+from binaryninja.types import Type
 
 from .zvm import instructions
 
@@ -41,8 +42,11 @@ class ZVM(Architecture):
             'loop_counter': RegisterInfo('loop_counter', 4),
             }
 
-    intrinsics = {'rc4': IntrinsicInfo(inputs=[], outputs=[], index=1)}
-    
+    intrinsics = {'rc4': IntrinsicInfo(inputs=[], outputs=[], index=1),
+                  'shuffle': IntrinsicInfo(inputs=[Type.int(4, False), Type.int(1, False)],
+                                           outputs=[], index=2)
+                  }
+
     # Xor keys
     xor_keys = {0:0}
 
@@ -238,7 +242,10 @@ class ZVM(Architecture):
                                     il.const(4, op3.op_size),
                                     self.read_il_operand(op4, il),
                                     il.const(4, op4.data_size.value)]))
-            pass
+        elif mnemonic == 'shuffle':
+            il.append(il.intrinsic([], 'shuffle',
+                                   [self.read_il_operand(op1, il),
+                                    self.read_il_operand(op2, il)]))
         else:
             il.append(il.nop())
 
